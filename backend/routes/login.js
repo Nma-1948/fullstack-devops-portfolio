@@ -1,22 +1,18 @@
-const express = require("express");
+import express from "express";
+import bcrypt from "bcryptjs";
+import db from "../config/db.js";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-const bcrypt = require("bcryptjs");
-
-const db = require("../config/db");
-
-const jwt = require("jsonwebtoken");
-
 router.post("/", (req, res) => {
-
   const { email, password } = req.body;
 
   // validation
   if (!email || !password) {
     return res.json({
       success: false,
-      message: "Email and password required"
+      message: "Email and password required",
     });
   }
 
@@ -25,11 +21,10 @@ router.post("/", (req, res) => {
     "SELECT * FROM users WHERE email = ?",
     [email],
     (err, results) => {
-
       if (err) {
         return res.json({
           success: false,
-          message: "Database error"
+          message: "Database error",
         });
       }
 
@@ -37,7 +32,7 @@ router.post("/", (req, res) => {
       if (results.length === 0) {
         return res.json({
           success: false,
-          message: "User not found"
+          message: "User not found",
         });
       }
 
@@ -49,36 +44,36 @@ router.post("/", (req, res) => {
       if (!isMatch) {
         return res.json({
           success: false,
-          message: "Invalid credentials"
+          message: "Invalid credentials",
         });
       }
 
       // success
       const token = jwt.sign(
-  {
-    id: user.id,
-    email: user.email,
-    role: user.role
-  },
-  process.env.JWT_SECRET,
-  {
-    expiresIn: "1d"
-  }
-);
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1d",
+        }
+      );
 
-return res.json({
-  success: true,
-  message: "Login successful",
-  token,
-  user: {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role
-  }
-});
+      return res.json({
+        success: true,
+        message: "Login successful",
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      });
     }
   );
 });
 
-module.exports = router;
+export default router;

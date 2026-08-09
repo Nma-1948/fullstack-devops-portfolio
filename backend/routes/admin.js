@@ -1,19 +1,28 @@
-// routes/admin.js
-const express = require("express");
-const router = express.Router();
-const db = require("../config/db");
+import express from "express";
+import db from "../config/db.js";
+import auth from "../middleware/auth.js";
 
-// GET all messages
-router.get("/messages", (req, res) => {
+const router = express.Router();
+
+// GET all messages — protected
+router.get("/messages", auth, (req, res) => {
   const sql = "SELECT * FROM messages ORDER BY created_at DESC";
 
   db.query(sql, (err, results) => {
     if (err) {
-      console.log(err);
-      return res.status(500).json({ error: "Database error" });
+      console.error(err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+      });
     }
-    res.json(results);
+
+    res.json({
+      success: true,
+      messages: results,
+    });
   });
 });
 
-module.exports = router;
+export default router;

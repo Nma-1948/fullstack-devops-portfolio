@@ -24,7 +24,7 @@ export default function AppRoutes() {
 
         {/* Projects */}
         <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/projects/:slug" element={<ProjectDetail />} />
       </Route>
 
       {/* Admin Auth */}

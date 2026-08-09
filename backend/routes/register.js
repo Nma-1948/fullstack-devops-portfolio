@@ -1,20 +1,17 @@
-const express = require("express");
+import express from "express";
+import bcrypt from "bcryptjs";
+import db from "../config/db.js";
 
 const router = express.Router();
 
-const bcrypt = require("bcryptjs");
-
-const db = require("../config/db");
-
 router.post("/", async (req, res) => {
-
   const { name, email, password } = req.body;
 
   // validation
   if (!name || !email || !password) {
     return res.json({
       success: false,
-      message: "All fields are required"
+      message: "All fields are required",
     });
   }
 
@@ -23,18 +20,17 @@ router.post("/", async (req, res) => {
     "SELECT * FROM users WHERE email = ?",
     [email],
     async (err, results) => {
-
       if (err) {
         return res.json({
           success: false,
-          message: "Database error"
+          message: "Database error",
         });
       }
 
       if (results.length > 0) {
         return res.json({
           success: false,
-          message: "User already exists"
+          message: "User already exists",
         });
       }
 
@@ -46,17 +42,16 @@ router.post("/", async (req, res) => {
         "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
         [name, email, hashedPassword],
         (err, result) => {
-
           if (err) {
             return res.json({
               success: false,
-              message: "Registration failed"
+              message: "Registration failed",
             });
           }
 
           return res.json({
             success: true,
-            message: "User registered successfully"
+            message: "User registered successfully",
           });
         }
       );
@@ -64,4 +59,4 @@ router.post("/", async (req, res) => {
   );
 });
 
-module.exports = router;
+export default router;

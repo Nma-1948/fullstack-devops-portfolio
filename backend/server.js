@@ -1,31 +1,17 @@
-require("dotenv").config();
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+import helmet from "helmet";
 
-const db = require("./config/db");
+import registerRoutes from "./routes/register.js";
+import adminRoutes from "./routes/admin.js";
+import contactRoutes from "./routes/contact.js";
+import loginRoutes from "./routes/login.js";
 
-const registerRoutes = require("./routes/register");
+import { accessLogger, errorLogger } from "./middleware/logger.js";
 
-const mysql = require("mysql2");
-
-const bcrypt = require("bcryptjs");
-
-const express = require("express");
-
-const cors = require("cors");
-
-const morgan = require("morgan");
-
-const adminRoutes = require("./routes/admin");
-
-const {
-  accessLogger,
-  errorLogger,
-} = require("./middleware/logger");
-
-const contactRoutes = require("./routes/contact");
-
-const loginRoutes = require("./routes/login");
-
-const helmet = require("helmet");
+dotenv.config();
 
 const app = express();
 
@@ -53,28 +39,28 @@ app.get("/", (req, res) => {
   res.send("Backend running");
 });
 
+app.get("/api/test401", (req, res) => {
+  return res.status(401).json({
+    success: false,
+    message: "Unauthorized test",
+  });
+});
+
+app.use("/api/admin", adminRoutes);
+
 app.use((err, req, res, next) => {
   errorLogger.error({
-  message: err.message,
-  stack: err.stack,
-  method: req.method,
-  url: req.originalUrl,
-});
+    message: err.message,
+    stack: err.stack,
+    method: req.method,
+    url: req.originalUrl,
+  });
 
   res.status(500).json({
     success: false,
     message: "Internal Server Error",
   });
 });
-
-app.get("/api/test401", (req, res) => {
-  return res.status(401).json({
-    success: false,
-    message: "Unauthorized test"
-  });
-});
-
-app.use("/api/admin", adminRoutes);
 
 app.listen(5000, "0.0.0.0", () => {
   console.log("Server running on port 5000");

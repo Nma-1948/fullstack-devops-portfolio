@@ -1,4 +1,4 @@
-const mysql = require("mysql2");
+import mysql from "mysql2";
 
 const db = mysql.createPool({
   host: process.env.DB_HOST,
@@ -10,4 +10,4 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-module.exports = db;
+export default db;

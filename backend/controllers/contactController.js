@@ -1,9 +1,10 @@
-const db = require("../config/db");
+import db from "../config/db.js";
 
-exports.sendMessage = (req, res) => {
+export const sendMessage = (req, res) => {
   const { name, email, message } = req.body;
 
-  const sql = "INSERT INTO messages (name, email, message) VALUES (?, ?, ?)";
+  const sql =
+    "INSERT INTO messages (name, email, message) VALUES (?, ?, ?)";
 
   db.query(sql, [name, email, message], (err, result) => {
     if (err) {
@@ -13,7 +14,7 @@ exports.sendMessage = (req, res) => {
 
     res.json({
       success: true,
-      message: "Message saved successfully"
+      message: "Message saved successfully",
     });
   });
 };

@@ -1,4 +1,4 @@
-const winston = require("winston");
+import winston from "winston";
 
 const accessLogger = winston.createLogger({
   level: "info",
@@ -40,7 +40,4 @@ accessLogger.stream = {
   },
 };
 
-module.exports = {
-  accessLogger,
-  errorLogger,
-};
+export { accessLogger, errorLogger };
