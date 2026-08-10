@@ -1,124 +1,231 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test, vi } from "vitest";
 import axios from "axios";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import Contact from "./Contact";
 
 vi.mock("axios");
 
-test("renders the contact form", () => {
-  render(<Contact />);
-
-  expect(screen.getByRole("heading", { name: "Contact Me" })).toBeInTheDocument();
-
-  expect(screen.getByPlaceholderText("Your Name")).toBeInTheDocument();
-  expect(screen.getByPlaceholderText("Your Email")).toBeInTheDocument();
-  expect(screen.getByPlaceholderText("Your Message")).toBeInTheDocument();
-
-  expect(
-    screen.getByRole("button", { name: "Send Message" })
-  ).toBeInTheDocument();
-});
-
-test("allows the user to fill the contact form", async () => {
-  const user = userEvent.setup();
-
-  render(<Contact />);
-
-  const name = screen.getByPlaceholderText("Your Name");
-  const email = screen.getByPlaceholderText("Your Email");
-  const message = screen.getByPlaceholderText("Your Message");
-
-  await user.type(name, "John Doe");
-  await user.type(email, "john@example.com");
-  await user.type(message, "Hello, I would like to contact you.");
-
-  expect(name).toHaveValue("John Doe");
-  expect(email).toHaveValue("john@example.com");
-  expect(message).toHaveValue("Hello, I would like to contact you.");
-});
-
-test("submits the contact form successfully", async () => {
-  const user = userEvent.setup();
-
-  axios.post.mockResolvedValue({
-    data: {
-      message: "Message received"
-    }
+describe("Contact", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  const alertMock = vi.spyOn(window, "alert").mockImplementation(() => {});
-
-  render(<Contact />);
-
-  await user.type(
-    screen.getByPlaceholderText("Your Name"),
-    "John Doe"
-  );
-
-  await user.type(
-    screen.getByPlaceholderText("Your Email"),
-    "john@example.com"
-  );
-
-  await user.type(
-    screen.getByPlaceholderText("Your Message"),
-    "Hello from the contact form."
-  );
-
-  await user.click(
-    screen.getByRole("button", { name: "Send Message" })
-  );
-
-  expect(axios.post).toHaveBeenCalledWith("/api/contact", {
-    name: "John Doe",
-    email: "john@example.com",
-    message: "Hello from the contact form."
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  expect(alertMock).toHaveBeenCalledWith(
-    "Message sent successfully ✅"
-  );
+  test("renders the contact form", () => {
+    render(<Contact />);
 
-  expect(screen.getByPlaceholderText("Your Name")).toHaveValue("");
-  expect(screen.getByPlaceholderText("Your Email")).toHaveValue("");
-  expect(screen.getByPlaceholderText("Your Message")).toHaveValue("");
+    expect(
+      screen.getByRole("heading", { name: "Contact Me" })
+    ).toBeInTheDocument();
 
-  alertMock.mockRestore();
-});
+    expect(screen.getByLabelText("Your Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your Email")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your Message")).toBeInTheDocument();
 
-test("shows an error when contact submission fails", async () => {
-  const user = userEvent.setup();
+    expect(
+      screen.getByRole("button", { name: "Send Message" })
+    ).toBeInTheDocument();
+  });
 
-  axios.post.mockRejectedValue(new Error("Network error"));
+  test("allows the user to enter contact information", async () => {
+    const user = userEvent.setup();
 
-  const alertMock = vi.spyOn(window, "alert").mockImplementation(() => {});
-  vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<Contact />);
 
-  render(<Contact />);
+    const name = screen.getByLabelText("Your Name");
+    const email = screen.getByLabelText("Your Email");
+    const message = screen.getByLabelText("Your Message");
 
-  await user.type(
-    screen.getByPlaceholderText("Your Name"),
-    "John Doe"
-  );
+    await user.type(name, "John Doe");
+    await user.type(email, "john@example.com");
+    await user.type(message, "Hello from the contact form.");
 
-  await user.type(
-    screen.getByPlaceholderText("Your Email"),
-    "john@example.com"
-  );
+    expect(name).toHaveValue("John Doe");
+    expect(email).toHaveValue("john@example.com");
+    expect(message).toHaveValue("Hello from the contact form.");
+  });
 
-  await user.type(
-    screen.getByPlaceholderText("Your Message"),
-    "Test message"
-  );
+  test("does not submit when required fields are empty", async () => {
+    const user = userEvent.setup();
 
-  await user.click(
-    screen.getByRole("button", { name: "Send Message" })
-  );
+    render(<Contact />);
 
-  expect(alertMock).toHaveBeenCalledWith(
-    "Failed to send message ❌"
-  );
+    await user.click(
+      screen.getByRole("button", { name: "Send Message" })
+    );
 
-  alertMock.mockRestore();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  test("does not submit an invalid email address", async () => {
+    const user = userEvent.setup();
+
+    render(<Contact />);
+
+    await user.type(screen.getByLabelText("Your Name"), "John Doe");
+    await user.type(screen.getByLabelText("Your Email"), "invalid-email");
+    await user.type(
+      screen.getByLabelText("Your Message"),
+      "Test message"
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Send Message" })
+    );
+
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  test("submits the correct payload", async () => {
+    const user = userEvent.setup();
+
+    axios.post.mockResolvedValue({
+      data: {
+        message: "Message received",
+      },
+    });
+
+    render(<Contact />);
+
+    await user.type(screen.getByLabelText("Your Name"), "John Doe");
+    await user.type(
+      screen.getByLabelText("Your Email"),
+      "john@example.com"
+    );
+    await user.type(
+      screen.getByLabelText("Your Message"),
+      "Hello from the contact form."
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Send Message" })
+    );
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith("/api/contact", {
+        name: "John Doe",
+        email: "john@example.com",
+        message: "Hello from the contact form.",
+      });
+    });
+  });
+
+  test("shows a submitting state while the request is pending", async () => {
+    const user = userEvent.setup();
+
+    let resolveRequest;
+
+    axios.post.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        })
+    );
+
+    render(<Contact />);
+
+    await user.type(screen.getByLabelText("Your Name"), "John Doe");
+    await user.type(
+      screen.getByLabelText("Your Email"),
+      "john@example.com"
+    );
+    await user.type(
+      screen.getByLabelText("Your Message"),
+      "Test message"
+    );
+
+    const submitButton = screen.getByRole("button", {
+      name: "Send Message",
+    });
+
+    await user.click(submitButton);
+
+    expect(
+      screen.getByRole("button", { name: "Sending..." })
+    ).toBeDisabled();
+
+    resolveRequest({
+      data: {
+        message: "Message received",
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Send Message" })
+      ).toBeEnabled();
+    });
+  });
+
+  test("shows a success message and clears the form after submission", async () => {
+    const user = userEvent.setup();
+
+    axios.post.mockResolvedValue({
+      data: {
+        message: "Message received",
+      },
+    });
+
+    render(<Contact />);
+
+    const name = screen.getByLabelText("Your Name");
+    const email = screen.getByLabelText("Your Email");
+    const message = screen.getByLabelText("Your Message");
+
+    await user.type(name, "John Doe");
+    await user.type(email, "john@example.com");
+    await user.type(message, "Hello from the contact form.");
+
+    await user.click(
+      screen.getByRole("button", { name: "Send Message" })
+    );
+
+    expect(
+      await screen.findByRole("alert")
+    ).toHaveTextContent("Message sent successfully.");
+
+    expect(name).toHaveValue("");
+    expect(email).toHaveValue("");
+    expect(message).toHaveValue("");
+  });
+
+  test("shows an error and preserves form data when submission fails", async () => {
+    const user = userEvent.setup();
+
+    axios.post.mockRejectedValue(new Error("Network error"));
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<Contact />);
+
+    const name = screen.getByLabelText("Your Name");
+    const email = screen.getByLabelText("Your Email");
+    const message = screen.getByLabelText("Your Message");
+
+    await user.type(name, "John Doe");
+    await user.type(email, "john@example.com");
+    await user.type(message, "Test message");
+
+    await user.click(
+      screen.getByRole("button", { name: "Send Message" })
+    );
+
+    expect(
+      await screen.findByRole("alert")
+    ).toHaveTextContent(
+      "Failed to send message. Please try again."
+    );
+
+    expect(name).toHaveValue("John Doe");
+    expect(email).toHaveValue("john@example.com");
+    expect(message).toHaveValue("Test message");
+
+    expect(
+      screen.getByRole("button", { name: "Send Message" })
+    ).toBeEnabled();
+  });
 });
