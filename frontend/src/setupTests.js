@@ -32,3 +32,17 @@ Object.defineProperty(globalThis, "localStorage", {
   value: localStorageMock,
   configurable: true,
 });
+
+class IntersectionObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+
+Object.defineProperty(globalThis, "IntersectionObserver", {
+  value: IntersectionObserverMock,
+  configurable: true,
+});

@@ -76,42 +76,18 @@ describe("ProjectDetail", () => {
     }
   });
 
-  test("renders valid GitHub and demo links", () => {
-    const project = projects.find(
-      (item) =>
-        (item.github && item.github !== "#") ||
-        (item.demo && item.demo !== "#")
-    );
-
-    expect(project).toBeDefined();
+  test("does not render GitHub or demo links when URLs are placeholders", () => {
+    const project = projects[0];
 
     renderProjectDetail(project.slug);
 
-    if (project.github && project.github !== "#") {
-      const githubLink = screen.getByRole("link", {
-        name: /View GitHub/i,
-      });
+    expect(
+      screen.queryByRole("link", { name: /View GitHub/i })
+    ).not.toBeInTheDocument();
 
-      expect(githubLink).toHaveAttribute("href", project.github);
-      expect(githubLink).toHaveAttribute("target", "_blank");
-      expect(githubLink).toHaveAttribute(
-        "rel",
-        "noopener noreferrer"
-      );
-    }
-
-    if (project.demo && project.demo !== "#") {
-      const demoLink = screen.getByRole("link", {
-        name: /Live Demo/i,
-      });
-
-      expect(demoLink).toHaveAttribute("href", project.demo);
-      expect(demoLink).toHaveAttribute("target", "_blank");
-      expect(demoLink).toHaveAttribute(
-        "rel",
-        "noopener noreferrer"
-      );
-    }
+    expect(
+      screen.queryByRole("link", { name: /Live Demo/i })
+    ).not.toBeInTheDocument();
   });
 
   test("renders Project Not Found for an invalid slug", () => {
