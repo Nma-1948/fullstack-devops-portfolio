@@ -67,3 +67,17 @@ jobs:
 
       - name: Run backend tests
         run: npm test
+
+  docker-builds:
+    name: Docker Builds
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build frontend Docker image
+        run: docker build -t fullstack-devops-portfolio-frontend ./frontend
+
+      - name: Build backend Docker image
+        run: docker build -t fullstack-devops-portfolio-backend ./backend
