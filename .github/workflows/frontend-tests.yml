@@ -213,33 +213,26 @@ jobs:
             -t fullstack-devops-portfolio-backend:scan \
             ./backend
 
-
       # --------------------------------------------------------
-      # Install Trivy
-      # --------------------------------------------------------
-      - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.2.4
-
-
-      # --------------------------------------------------------
-      # Scan frontend
+      # Scan frontend Docker image
       # --------------------------------------------------------
       - name: Scan frontend image
-        run: |
-          trivy image \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --ignore-unfixed \
-            fullstack-devops-portfolio-frontend:scan
-
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: fullstack-devops-portfolio-frontend:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
 
       # --------------------------------------------------------
-      # Scan backend
+      # Scan backend Docker image
       # --------------------------------------------------------
       - name: Scan backend image
-        run: |
-          trivy image \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            --ignore-unfixed \
-            fullstack-devops-portfolio-backend:scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: fullstack-devops-portfolio-backend:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
