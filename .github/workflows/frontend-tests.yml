@@ -123,6 +123,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --------------------------------------------------------
+      # Build images again
+      # --------------------------------------------------------
+      # Each GitHub Actions job runs on a fresh runner.
+      # Therefore the images from docker-builds are not available
+      # here and must be rebuilt.
+      # --------------------------------------------------------
+
       - name: Build frontend image
         run: |
           docker build \
@@ -135,41 +143,64 @@ jobs:
             -t fullstack-devops-portfolio-backend:ci \
             ./backend
 
+
+      # ========================================================
+      # INVESTIGATE BACKEND PRODUCTION IMAGE
+      # ========================================================
       - name: Inspect backend production dependencies
         run: |
           docker run --rm \
-            fullstack-devops-portfolio-backend:scan \
+            fullstack-devops-portfolio-backend:ci \
             sh -c '
+              echo "=============================================="
+              echo "BACKEND PRODUCTION IMAGE INSPECTION"
+              echo "=============================================="
+
+              echo ""
               echo "=== Checking /app/node_modules ==="
+
               if [ -d /app/node_modules ]; then
                 echo "node_modules exists"
-
-                echo ""
-                echo "=== Jest ==="
-                if [ -d /app/node_modules/jest ]; then
-                  echo "WARNING: Jest IS inside production image"
-                else
-                  echo "OK: Jest is NOT inside production image"
-                fi
-
-                echo ""
-                echo "=== Vulnerable packages ==="
-                for pkg in brace-expansion picomatch ip-address sigstore tar; do
-                  if [ -d "/app/node_modules/$pkg" ]; then
-                    echo "FOUND: $pkg"
-                  else
-                    echo "NOT FOUND: $pkg"
-                  fi
-                done
               else
                 echo "ERROR: /app/node_modules does not exist"
                 exit 1
               fi
+
+              echo ""
+              echo "=== Checking Jest ==="
+
+              if [ -d /app/node_modules/jest ]; then
+                echo "WARNING: Jest IS inside production image"
+              else
+                echo "OK: Jest is NOT inside production image"
+              fi
+
+              echo ""
+              echo "=== Checking vulnerable packages ==="
+
+              for pkg in brace-expansion picomatch ip-address sigstore tar; do
+                if [ -d "/app/node_modules/$pkg" ]; then
+                  echo "FOUND: $pkg"
+                else
+                  echo "NOT FOUND: $pkg"
+                fi
+              done
+
+              echo ""
+              echo "=== Production dependency tree ==="
+
+              npm ls --omit=dev --depth=0 || true
+
+              echo ""
+              echo "=============================================="
+              echo "END BACKEND PRODUCTION IMAGE INSPECTION"
+              echo "=============================================="
             '
 
-      # --------------------------------------------------------
+
+      # ========================================================
       # FRONTEND CONTAINER
-      # --------------------------------------------------------
+      # ========================================================
       - name: Run frontend container
         run: |
           docker run -d \
@@ -193,9 +224,9 @@ jobs:
           docker rm -f frontend-smoke || true
 
 
-      # --------------------------------------------------------
+      # ========================================================
       # BACKEND CONTAINER
-      # --------------------------------------------------------
+      # ========================================================
       - name: Run backend container
         run: |
           docker run -d \
@@ -233,22 +264,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --------------------------------------------------------
+      # Build frontend image
+      # --------------------------------------------------------
       - name: Build frontend image
         run: |
           docker build \
             -t fullstack-devops-portfolio-frontend:scan \
             ./frontend
 
+      # --------------------------------------------------------
+      # Build backend image
+      # --------------------------------------------------------
       - name: Build backend image
         run: |
           docker build \
             -t fullstack-devops-portfolio-backend:scan \
             ./backend
 
-      # --------------------------------------------------------
-      # Scan frontend Docker image
-      # --------------------------------------------------------
-      - name: Scan frontend image
+
+      # ========================================================
+      # TRIVY - FRONTEND
+      # ========================================================
+      - name: Scan frontend Docker image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
@@ -257,10 +295,11 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
 
-      # --------------------------------------------------------
-      # Scan backend Docker image
-      # --------------------------------------------------------
-      - name: Scan backend image
+
+      # ========================================================
+      # TRIVY - BACKEND
+      # ========================================================
+      - name: Scan backend Docker image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
