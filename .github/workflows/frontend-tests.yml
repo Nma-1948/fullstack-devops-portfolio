@@ -135,6 +135,38 @@ jobs:
             -t fullstack-devops-portfolio-backend:ci \
             ./backend
 
+      - name: Inspect backend production dependencies
+        run: |
+          docker run --rm \
+            fullstack-devops-portfolio-backend:scan \
+            sh -c '
+              echo "=== Checking /app/node_modules ==="
+              if [ -d /app/node_modules ]; then
+                echo "node_modules exists"
+
+                echo ""
+                echo "=== Jest ==="
+                if [ -d /app/node_modules/jest ]; then
+                  echo "WARNING: Jest IS inside production image"
+                else
+                  echo "OK: Jest is NOT inside production image"
+                fi
+
+                echo ""
+                echo "=== Vulnerable packages ==="
+                for pkg in brace-expansion picomatch ip-address sigstore tar; do
+                  if [ -d "/app/node_modules/$pkg" ]; then
+                    echo "FOUND: $pkg"
+                  else
+                    echo "NOT FOUND: $pkg"
+                  fi
+                done
+              else
+                echo "ERROR: /app/node_modules does not exist"
+                exit 1
+              fi
+            '
+
       # --------------------------------------------------------
       # FRONTEND CONTAINER
       # --------------------------------------------------------
