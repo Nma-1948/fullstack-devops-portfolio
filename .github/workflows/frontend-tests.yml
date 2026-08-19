@@ -309,3 +309,9 @@ jobs:
           exit-code: 0
           format: json
           output: trivy-backend.json
+
+      - name: Inspect Trivy backend JSON
+        if: always()
+        run: |
+          echo "=== Trivy backend JSON ==="
+          cat trivy-backend.json
