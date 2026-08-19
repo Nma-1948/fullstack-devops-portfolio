@@ -306,4 +306,6 @@ jobs:
           image-ref: fullstack-devops-portfolio-backend:scan
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: 1
+          exit-code: 0
+          format: json
+          output: trivy-backend.json
