@@ -310,8 +310,21 @@ jobs:
           format: json
           output: trivy-backend.json
 
-      - name: Inspect Trivy backend JSON
+      - name: Print backend vulnerability summary
         if: always()
         run: |
-          echo "=== Trivy backend JSON ==="
-          cat trivy-backend.json
+          echo "=== BACKEND VULNERABILITY SUMMARY ==="
+
+             jq -r '
+             .Results[]?
+             | .Vulnerabilities[]?
+             | [
+                .VulnerabilityID,
+                .PkgName,
+                .InstalledVersion,
+                .FixedVersion,
+                .Severity,
+                .Title
+              ]
+            | @tsv
+          ' trivy-backend.json
