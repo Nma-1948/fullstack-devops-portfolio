@@ -233,7 +233,7 @@ jobs:
           docker rm -f backend-smoke || true
 
 
-  # ============================================================
+    # ============================================================
   # DOCKER SECURITY SCANNING
   # ============================================================
   docker-security-scan:
@@ -249,7 +249,8 @@ jobs:
 
       # --------------------------------------------------------
       # Build frontend image
-      # --------------------------------------------------------      - name: Build frontend image
+      # --------------------------------------------------------
+      - name: Build frontend image
         run: |
           docker build \
             -t fullstack-devops-portfolio-frontend:scan \
@@ -264,6 +265,9 @@ jobs:
             -t fullstack-devops-portfolio-backend:scan \
             ./backend
 
+      # ========================================================
+      # SEARCH ENTIRE BACKEND IMAGE
+      # ========================================================
       - name: Search entire backend image for vulnerable packages
         run: |
           docker run --rm \
@@ -284,6 +288,9 @@ jobs:
               done
             '
 
+      # ========================================================
+      # LOCATE PACKAGE.JSON FILES
+      # ========================================================
       - name: Locate vulnerable package.json files
         run: |
           docker run --rm \
@@ -314,7 +321,6 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
 
-
       # ========================================================
       # TRIVY - BACKEND
       # ========================================================
@@ -329,15 +335,18 @@ jobs:
           format: json
           output: trivy-backend.json
 
+      # ========================================================
+      # PRINT BACKEND VULNERABILITY SUMMARY
+      # ========================================================
       - name: Print backend vulnerability summary
         if: always()
         run: |
           echo "=== BACKEND VULNERABILITY SUMMARY ==="
 
-             jq -r '
-             .Results[]?
-             | .Vulnerabilities[]?
-             | [
+          jq -r '
+            .Results[]?
+            | .Vulnerabilities[]?
+            | [
                 .VulnerabilityID,
                 .PkgName,
                 .InstalledVersion,
