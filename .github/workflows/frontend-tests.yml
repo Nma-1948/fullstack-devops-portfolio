@@ -220,6 +220,48 @@ jobs:
               echo "=============================================="
             '
 
+      # ========================================================
+      # SHOW EXACT VULNERABLE PACKAGE VERSIONS
+      # ========================================================
+      - name: Show exact npm bundled package versions
+        run: |
+          docker run --rm \
+            fullstack-devops-portfolio-backend:scan \
+            sh -c '
+              echo "=============================================="
+              echo "EXACT NPM BUNDLED PACKAGE VERSIONS"
+              echo "=============================================="
+
+              echo ""
+              echo "=== Node ==="
+              node --version
+
+              echo ""
+              echo "=== npm ==="
+              npm --version
+
+              echo ""
+              echo "=== npm package ==="
+              node -p "require(\"/usr/local/lib/node_modules/npm/package.json\").version"
+
+              echo ""
+              echo "=== Bundled packages ==="
+
+              for pkg in brace-expansion picomatch ip-address sigstore tar; do
+                echo ""
+                echo "PACKAGE: $pkg"
+
+                node -p \
+                  "require(\"/usr/local/lib/node_modules/npm/node_modules/$pkg/package.json\").version" \
+                  2>/dev/null || echo "Not found"
+              done
+
+              echo ""
+              echo "=============================================="
+              echo "END VERSION INVESTIGATION"
+              echo "=============================================="
+            '
+
 
       - name: Inspect npm bundled dependencies
         run: |
