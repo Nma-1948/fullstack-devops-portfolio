@@ -144,10 +144,10 @@ jobs:
             ./backend
 
 
-      # ========================================================
+            # ========================================================
       # INVESTIGATE BACKEND PRODUCTION IMAGE
       # ========================================================
-      - name: Inspect backend production dependencies
+      - name: Inspect backend production image
         run: |
           docker run --rm \
             fullstack-devops-portfolio-backend:ci \
@@ -157,39 +157,49 @@ jobs:
               echo "=============================================="
 
               echo ""
-              echo "=== Checking /app/node_modules ==="
-
-              if [ -d /app/node_modules ]; then
-                echo "node_modules exists"
-              else
-                echo "ERROR: /app/node_modules does not exist"
-                exit 1
-              fi
+              echo "=== Node version ==="
+              node --version
+              npm --version
 
               echo ""
-              echo "=== Checking Jest ==="
-
-              if [ -d /app/node_modules/jest ]; then
-                echo "WARNING: Jest IS inside production image"
-              else
-                echo "OK: Jest is NOT inside production image"
-              fi
+              echo "=== Production dependencies ==="
+              npm ls --omit=dev --all
 
               echo ""
-              echo "=== Checking vulnerable packages ==="
+              echo "=== Searching entire image filesystem ==="
 
               for pkg in brace-expansion picomatch ip-address sigstore tar; do
-                if [ -d "/app/node_modules/$pkg" ]; then
-                  echo "FOUND: $pkg"
-                else
-                  echo "NOT FOUND: $pkg"
-                fi
+                echo ""
+                echo "----- $pkg -----"
+
+                find / \
+                  -type d \
+                  -name "$pkg" \
+                  2>/dev/null || true
+
+                find / \
+                  -type f \
+                  -name "package.json" \
+                  2>/dev/null |
+                while read file; do
+                  if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$pkg\"" "$file" 2>/dev/null; then
+                    echo "PACKAGE.JSON: $file"
+                  fi
+                done
               done
 
               echo ""
-              echo "=== Production dependency tree ==="
+              echo "=== Checking common Node locations ==="
 
-              npm ls --omit=dev --depth=0 || true
+              find /usr/local \
+                -maxdepth 6 \
+                -type d \
+                \( -name "brace-expansion" \
+                   -o -name "picomatch" \
+                   -o -name "ip-address" \
+                   -o -name "sigstore" \
+                   -o -name "tar" \) \
+                2>/dev/null || true
 
               echo ""
               echo "=============================================="
