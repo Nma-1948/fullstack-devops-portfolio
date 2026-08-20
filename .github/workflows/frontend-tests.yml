@@ -147,63 +147,36 @@ jobs:
             # ========================================================
       # INVESTIGATE BACKEND PRODUCTION IMAGE
       # ========================================================
-      - name: Inspect backend production image
+      - name: Locate vulnerable packages in production image
         run: |
           docker run --rm \
             fullstack-devops-portfolio-backend:ci \
             sh -c '
               echo "=============================================="
-              echo "BACKEND PRODUCTION IMAGE INSPECTION"
+              echo "FULL IMAGE PACKAGE LOCATION INVESTIGATION"
               echo "=============================================="
-
-              echo ""
-              echo "=== Node version ==="
-              node --version
-              npm --version
-
-              echo ""
-              echo "=== Production dependencies ==="
-              npm ls --omit=dev --all
-
-              echo ""
-              echo "=== Searching entire image filesystem ==="
 
               for pkg in brace-expansion picomatch ip-address sigstore tar; do
                 echo ""
-                echo "----- $pkg -----"
+                echo "=== $pkg ==="
 
-                find / \
-                  -type d \
-                  -name "$pkg" \
-                  2>/dev/null || true
-
-                find / \
-                  -type f \
-                  -name "package.json" \
-                  2>/dev/null |
-                while read file; do
-                  if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$pkg\"" "$file" 2>/dev/null; then
-                    echo "PACKAGE.JSON: $file"
-                  fi
-                done
+                find / -type d -path "*/node_modules/$pkg" 2>/dev/null || true
               done
 
               echo ""
-              echo "=== Checking common Node locations ==="
+              echo "=== npm installation ==="
+              npm --version
+              which npm
+              npm root -g
 
-              find /usr/local \
-                -maxdepth 6 \
-                -type d \
-                \( -name "brace-expansion" \
-                   -o -name "picomatch" \
-                   -o -name "ip-address" \
-                   -o -name "sigstore" \
-                   -o -name "tar" \) \
-                2>/dev/null || true
+              echo ""
+              echo "=== Node installation ==="
+              which node
+              node --version
 
               echo ""
               echo "=============================================="
-              echo "END BACKEND PRODUCTION IMAGE INSPECTION"
+              echo "END INVESTIGATION"
               echo "=============================================="
             '
 
