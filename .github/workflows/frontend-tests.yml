@@ -142,6 +142,41 @@ jobs:
             -t fullstack-devops-portfolio-backend:ci \
             ./backend
 
+     - name: Inspect Node and npm versions
+       run: |
+         docker run --rm \
+      fullstack-devops-portfolio-backend:scan \
+         sh -c '
+        echo "=============================================="
+        echo "NODE AND NPM VERSION INVESTIGATION"
+        echo "=============================================="
+
+        echo ""
+        echo "=== Node ==="
+        node --version
+
+        echo ""
+        echo "=== npm ==="
+        npm --version
+
+        echo ""
+        echo "=== Vulnerable npm bundled packages ==="
+
+        for pkg in brace-expansion picomatch ip-address sigstore tar; do
+          echo ""
+          echo "PACKAGE: $pkg"
+
+          node -p \
+            "require(\"/usr/local/lib/node_modules/npm/node_modules/$pkg/package.json\").version" \
+            2>/dev/null || echo "Not found"
+        done
+
+        echo ""
+        echo "=============================================="
+        echo "END VERSION INVESTIGATION"
+        echo "=============================================="
+      '
+
 
       # ========================================================
       # INVESTIGATE BACKEND PRODUCTION IMAGE
