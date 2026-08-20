@@ -127,8 +127,7 @@ jobs:
       # Build images again
       # --------------------------------------------------------
       # Each GitHub Actions job runs on a fresh runner.
-      # Therefore the images from docker-builds are not available
-      # here and must be rebuilt.
+      # Therefore images from docker-builds are not available here.
       # --------------------------------------------------------
 
       - name: Build frontend image
@@ -144,7 +143,7 @@ jobs:
             ./backend
 
 
-            # ========================================================
+      # ========================================================
       # INVESTIGATE BACKEND PRODUCTION IMAGE
       # ========================================================
       - name: Locate vulnerable packages in production image
@@ -160,7 +159,10 @@ jobs:
                 echo ""
                 echo "=== $pkg ==="
 
-                find / -type d -path "*/node_modules/$pkg" 2>/dev/null || true
+                find / \
+                  -type d \
+                  -path "*/node_modules/$pkg" \
+                  2>/dev/null || true
               done
 
               echo ""
@@ -180,10 +182,11 @@ jobs:
               echo "=============================================="
             '
 
+
       - name: Inspect npm bundled dependencies
         run: |
           docker run --rm \
-            fullstack-devops-portfolio-backend:scan \
+            fullstack-devops-portfolio-backend:ci \
             sh -c '
               echo "=============================================="
               echo "NPM BUNDLED DEPENDENCY INVESTIGATION"
@@ -209,7 +212,8 @@ jobs:
                 echo "PACKAGE: $pkg"
 
                 node -p \
-                  "require(\"/usr/local/lib/node_modules/npm/node_modules/$pkg/package.json\").version"
+                  "require(\"/usr/local/lib/node_modules/npm/node_modules/$pkg/package.json\").version" \
+                  2>/dev/null || echo "Package not found"
               done
 
               echo ""
@@ -271,7 +275,7 @@ jobs:
           docker rm -f backend-smoke || true
 
 
-    # ============================================================
+  # ============================================================
   # DOCKER SECURITY SCANNING
   # ============================================================
   docker-security-scan:
@@ -285,23 +289,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --------------------------------------------------------
-      # Build frontend image
-      # --------------------------------------------------------
+
+      # ========================================================
+      # BUILD FRONTEND SCAN IMAGE
+      # ========================================================
       - name: Build frontend image
         run: |
           docker build \
             -t fullstack-devops-portfolio-frontend:scan \
             ./frontend
 
-      # --------------------------------------------------------
-      # Build backend image
-      # --------------------------------------------------------
+
+      # ========================================================
+      # BUILD BACKEND SCAN IMAGE
+      # ========================================================
       - name: Build backend image
         run: |
           docker build \
             -t fullstack-devops-portfolio-backend:scan \
             ./backend
+
 
       # ========================================================
       # SEARCH ENTIRE BACKEND IMAGE
@@ -326,6 +333,7 @@ jobs:
               done
             '
 
+
       # ========================================================
       # LOCATE PACKAGE.JSON FILES
       # ========================================================
@@ -347,6 +355,7 @@ jobs:
               done
             '
 
+
       # ========================================================
       # TRIVY - FRONTEND
       # ========================================================
@@ -358,6 +367,7 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
+
 
       # ========================================================
       # TRIVY - BACKEND
@@ -373,6 +383,7 @@ jobs:
           format: json
           output: trivy-backend.json
 
+
       # ========================================================
       # PRINT BACKEND VULNERABILITY SUMMARY
       # ========================================================
@@ -381,16 +392,20 @@ jobs:
         run: |
           echo "=== BACKEND VULNERABILITY SUMMARY ==="
 
-          jq -r '
-            .Results[]?
-            | .Vulnerabilities[]?
-            | [
-                .VulnerabilityID,
-                .PkgName,
-                .InstalledVersion,
-                .FixedVersion,
-                .Severity,
-                .Title
-              ]
-            | @tsv
-          ' trivy-backend.json
+          if [ -f trivy-backend.json ]; then
+            jq -r '
+              .Results[]?
+              | .Vulnerabilities[]?
+              | [
+                  .VulnerabilityID,
+                  .PkgName,
+                  .InstalledVersion,
+                  .FixedVersion,
+                  .Severity,
+                  .Title
+                ]
+              | @tsv
+            ' trivy-backend.json
+          else
+            echo "No Trivy JSON report found."
+          fi
