@@ -249,8 +249,7 @@ jobs:
 
       # --------------------------------------------------------
       # Build frontend image
-      # --------------------------------------------------------
-      - name: Build frontend image
+      # --------------------------------------------------------      - name: Build frontend image
         run: |
           docker build \
             -t fullstack-devops-portfolio-frontend:scan \
@@ -265,6 +264,43 @@ jobs:
             -t fullstack-devops-portfolio-backend:scan \
             ./backend
 
+      - name: Search entire backend image for vulnerable packages
+        run: |
+          docker run --rm \
+            fullstack-devops-portfolio-backend:scan \
+            sh -c '
+              echo "=== SEARCHING ENTIRE IMAGE ==="
+
+              for pkg in brace-expansion picomatch ip-address sigstore tar; do
+                echo ""
+                echo "=============================================="
+                echo "PACKAGE: $pkg"
+                echo "=============================================="
+
+                find / \
+                  -type d \
+                  -name "$pkg" \
+                  2>/dev/null || true
+              done
+            '
+
+      - name: Locate vulnerable package.json files
+        run: |
+          docker run --rm \
+            fullstack-devops-portfolio-backend:scan \
+            sh -c '
+              echo "=== VULNERABLE PACKAGE.JSON LOCATIONS ==="
+
+              for pkg in brace-expansion picomatch ip-address sigstore tar; do
+                echo ""
+                echo "PACKAGE: $pkg"
+
+                find / \
+                  -type f \
+                  -path "*/$pkg/package.json" \
+                  2>/dev/null || true
+              done
+            '
 
       # ========================================================
       # TRIVY - FRONTEND
